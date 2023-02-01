@@ -54,10 +54,7 @@ def LabelData(distance):
 
     label = np.zeros(len(distance))
 
-    for i in range(len(distance)):
-        label[i] = np.argmin(distance[i])
-
-    return label
+    return (label + np.argmin(distance, axis=1))
 
 
 def CentroidMean(label, data_array, centroids):
