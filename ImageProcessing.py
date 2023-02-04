@@ -9,7 +9,7 @@ def get_image_paths(path):
         for file in f:
             if '.png' in file or '.jpg' in file:
                 files.append(os.path.join(r, file))
-    files = files[0:10]
+    #files = files[0:10]
     #for f in files:
     #    print(f)
     return files
@@ -23,15 +23,18 @@ def image_name_parser(filename):
 def read_letter_images():
     load_letters = get_image_paths("Char74k_32x32")
 
-    # load_letters = load_letters[:1100]
-    # print(load_letters)
+    #load_letters = load_letters[:10]
+    print(len(load_letters))
 
     data_array = []
 
     for file in load_letters:
-        print(file)
+        #print(file)
         letter = skimage.io.imread(file, as_gray=True)
-        data_array.append(sampler(letter))
+        if len(data_array) == 0:
+            data_array = numpy.array(sampler(letter))
+        else:
+            data_array = numpy.concatenate((data_array, sampler(letter)), axis=0)
 
     data_array = numpy.array(data_array)
     # print(data_array[-1])
@@ -53,6 +56,8 @@ def sampler(image):
 
 def read_nonletter_images():
     load_nonletters = get_image_paths("non_letters")
+    print(len(load_nonletters))
+    #load_nonletters = load_nonletters[:5000]
 
     data_array = []
     for file in load_nonletters:
@@ -76,22 +81,8 @@ def read_nonletter_images():
     #     iimage = iimage.convert('RGB')
     # iimage.save("test-pic-2.jpg")
 
-    '''
-    letter_sample = []
-    for column in range(0, len(letter[0]), 8):
-        for row in range(0, len(letter[0]), 8):
-            letter_sample.append(letter[column:column + 8, row:row + 8])
-            temp_array = numpy.array([num for sublist in letter_sample[-1] for num in sublist])
-            temp_array = numpy.append(temp_array, image_name_parser(file))
-            data_array.append(temp_array)
-
-
-    data_array = numpy.array(data_array)
-    '''
-
 
 def add_border(image):
-
     size = len(image)
     zeros = numpy.zeros((size, int((256 - size) / 2)))
     image = numpy.concatenate((zeros, image), axis=1)
@@ -124,6 +115,9 @@ if __name__ == "__main__":
 
     letters_length = len(letters)
     nonletters_length = len(nonletters)
+
+    print(len(letters))
+    print(len(nonletters))
 
     unshuffled_data = numpy.concatenate((letters, nonletters), axis=0)
 
