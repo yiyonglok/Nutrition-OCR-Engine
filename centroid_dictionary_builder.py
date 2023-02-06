@@ -4,7 +4,7 @@ import string
 def centroid_dictionary_builder():
     #init dictionary with alphanumeric chars
     chars = string.digits + string.ascii_uppercase + string.ascii_lowercase
-    char_centroids_dict = {char:[] for char in chars}
+    char_centroids_dict = {char:None for char in chars}
 
     #load centroid data
     with open('centroid_data.npy', 'rb') as opened_file:
