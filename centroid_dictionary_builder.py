@@ -11,7 +11,7 @@ def centroid_dictionary_builder():
         centroids = np.load(opened_file)
 
     #flatten centroid data into single dimension
-    centroids.flatten()
+    centroids = centroids.flatten()
 
     #1016 images/char * 16 centroids/image = 16256 centroids/char
     prev_index = 0
