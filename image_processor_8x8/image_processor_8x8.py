@@ -65,4 +65,4 @@ for image_count, image_path in enumerate(image_paths):
 
         image_data_8x8 = np.array(image_data_8x8)
         print(f"\n{file_names[image_count]} : {image_data_8x8.shape}")
-        np.save(f"{file_names[image_count]}_8x8_data", np.array(image_data_8x8))
+        np.save(f"{file_names[image_count]}_8x8_data", image_data_8x8)
