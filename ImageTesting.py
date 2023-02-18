@@ -5,6 +5,7 @@ import random
 import multiprocessing
 import centroid_dictionary_builder as cdb
 import CentroidPrinter as cp
+import HeatMapBuilder
 
 
 def calculate_z(letter_array_i, neuron_weights):
@@ -14,10 +15,49 @@ def calculate_z(letter_array_i, neuron_weights):
 
 
 def save_letter(letter, name):
-    image = Image.fromarray(letter * 255)
+    image = Image.fromarray(letter)
     if image.mode != 'RGB':
         image = image.convert('RGB')
     image.save(name + ".jpg")
+
+
+def rebuild_32x32(letter_data, sample_index):
+    letter_data = numpy.reshape(letter_data, (16, 64))
+    print(len(letter_data[0]))
+
+    temp_array = []
+
+    for i in range(len(letter_data)):
+        temp_array.append(numpy.reshape(letter_data[i], (8, 8)))
+
+    #print(len(temp_array[0]))
+    temp_image = numpy.block([[temp_array[0], temp_array[1], temp_array[2], temp_array[3]],
+                              [temp_array[4], temp_array[5], temp_array[6], temp_array[7]],
+                              [temp_array[8], temp_array[9], temp_array[10], temp_array[11]],
+                              [temp_array[12], temp_array[13], temp_array[14], temp_array[15]]])
+
+    #temp_image = numpy.reshape(letter_data[0], (8, 8))
+    print(temp_image)
+    save_letter(temp_image, "image" + str(sample_index))
+
+
+def rebuild_32x32_again(letter_data, sample_index):
+    print(len(letter_data[0]))
+
+    temp_array = []
+
+    for i in range(len(letter_data)):
+        temp_array.append(numpy.reshape(letter_data[i], (8, 8)))
+
+    #print(len(temp_array[0]))
+    temp_image = numpy.block([[temp_array[0], temp_array[1], temp_array[2], temp_array[3]],
+                              [temp_array[4], temp_array[5], temp_array[6], temp_array[7]],
+                              [temp_array[8], temp_array[9], temp_array[10], temp_array[11]],
+                              [temp_array[12], temp_array[13], temp_array[14], temp_array[15]]])
+
+    #temp_image = numpy.reshape(letter_data[0], (8, 8))
+    print(temp_image)
+    save_letter(temp_image, "nutrition" + str(sample_index))
 
 
 if __name__ == "__main__":
@@ -36,10 +76,15 @@ if __name__ == "__main__":
 
     print(len(letter_array[0]))
 
-    print(letter_array[8000])
+    #sample_index = 6167
+    #index_calculator = sample_index * 16
+
+    #temp_matrix = letter_array[index_calculator:index_calculator+16]
+    #temp_matrix = temp_matrix [:,:-1]
+    #print("len_temp_matrix[0]:", len(temp_matrix[0]))
+    #rebuild_32x32_again(temp_matrix, sample_index)
 
     letter_centroid_data = letter_array[:,-1] #get centroid labels for datasets
-
     letter_centroid_data = numpy.reshape(letter_centroid_data,(int(len(letter_centroid_data)/16), 16))
 
 
@@ -47,25 +92,8 @@ if __name__ == "__main__":
     letter_data = cdb.build_translated_letter_centroid_labels(letter_centroid_data)
 
 
-    print(len(letter_data[500]))
+    #rebuild_32x32(letter_data[sample_index], sample_index)
 
-    temp_image = numpy.reshape(numpy.ndarray.round(letter_data[500, :64]), (8, 8))
-    print(temp_image)
-    save_letter(temp_image, "image500")
-
-    print(letter_data[500,:64])
-'''
-    for i in range(8000,8080):
-        temp_image = numpy.reshape(letter_array[i,:-1], (8, 8))
-        print(temp_image)
-        save_letter(temp_image, "image" + str(i))
-
-    for i in range(500,505):
-        print("Sample:", i)
-        print(letter_data[i])
-        temp_image = numpy.reshape(letter_data[i], (32, 32))
-        print(temp_image)
-        save_letter(temp_image, "sample" + str(i))
 
     Bias = numpy.full((len(letter_data),1), 1)
 
@@ -91,6 +119,11 @@ if __name__ == "__main__":
     print("\nLogical Threads being used:", multiprocessing.cpu_count() - 1)
 
     start = time.time()#Start Timer
+
+    print(letter_array[0])
+
+    heatMap = HeatMapBuilder.HeatMap(756, 1008, len(letter_array), 4)
+    heatMap.print_dimensions()
 
     for i in range(len(letter_array)):
         print("Sample: ", i)
@@ -118,13 +151,14 @@ if __name__ == "__main__":
 
         # Confusion Matrix Logic
         if prediction == 1:
-            if detected_letters <= 10:
-                temp_image = numpy.reshape(letter_array[i,1:], (32, 32))
-                save_letter(temp_image, "letterhit_" + str(i))
+            heatMap.update_heat_map(i)
         else:
             not_a_letter += 1
 
         print("prediction", prediction)
+
+        #if i > 10000:
+        #    break
 
     end = time.time()
 
@@ -142,5 +176,6 @@ if __name__ == "__main__":
     text_file.write(time_string)
     text_file.close()
 
+    heatMap.print_heat_map()
+
     exit()
-'''
