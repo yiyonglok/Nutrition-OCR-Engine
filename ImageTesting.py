@@ -6,10 +6,11 @@ import multiprocessing
 import centroid_dictionary_builder as cdb
 import CentroidPrinter as cp
 import HeatMapBuilder
+import KTester as kt
 
 
-def calculate_z(letter_array_i, neuron_weights):
-    dot_product = -numpy.dot(letter_array_i, neuron_weights)
+def calculate_z(data_array_i, neuron_weights):
+    dot_product = -numpy.dot(data_array_i, neuron_weights)
     z_value = 1 / (1 + numpy.exp(dot_product))
     return z_value
 
@@ -18,7 +19,8 @@ def save_letter(letter, name):
     image = Image.fromarray(letter)
     if image.mode != 'RGB':
         image = image.convert('RGB')
-    image.save(name + ".jpg")
+    file_path = name + ".jpg"
+    image.save(file_path)
 
 
 def rebuild_32x32(letter_data, sample_index):
@@ -38,7 +40,7 @@ def rebuild_32x32(letter_data, sample_index):
 
     #temp_image = numpy.reshape(letter_data[0], (8, 8))
     print(temp_image)
-    save_letter(temp_image, "image" + str(sample_index))
+    save_letter(temp_image, "ImageTestingOuput/image" + str(sample_index))
 
 
 def rebuild_32x32_again(letter_data, sample_index):
@@ -57,49 +59,40 @@ def rebuild_32x32_again(letter_data, sample_index):
 
     #temp_image = numpy.reshape(letter_data[0], (8, 8))
     print(temp_image)
-    save_letter(temp_image, "nutrition" + str(sample_index))
+    save_letter(temp_image, "ImageTestingOuput/nutrition" + str(sample_index))
 
 
 if __name__ == "__main__":
 
-    with open('neuron_weights.npy', 'rb') as opened_file:
+    with open('100c_001a_new_neuron_weights.npy', 'rb') as opened_file:
         neuron_weights = numpy.load(opened_file)
 
-    with open('output_weights.npy', 'rb') as opened_file:
+    with open('100c_001a_new_output_weights.npy', 'rb') as opened_file:
         output_weights = numpy.load(opened_file)
-
-    with open('image_data_with_centroids.npy', 'rb') as opened_file:
-        letter_array = numpy.load(opened_file)
 
     with open('100centroids/centroid_data_100centroids.npy', 'rb') as opened_file:
         centroid_data = numpy.load(opened_file)
 
-    print(len(letter_array[0]))
+    start = time.time()  # Start Timer
 
-    #sample_index = 6167
-    #index_calculator = sample_index * 16
+    image_array = kt.LabelData("nl_2_8x8_data_single.npy",
+                 "100centroids/centroid_data_100centroids.npy",
+                 "100centroids/nonletter_labeled_data_100centroids.npy")
 
-    #temp_matrix = letter_array[index_calculator:index_calculator+16]
-    #temp_matrix = temp_matrix [:,:-1]
-    #print("len_temp_matrix[0]:", len(temp_matrix[0]))
-    #rebuild_32x32_again(temp_matrix, sample_index)
-
-    letter_centroid_data = letter_array[:,-1] #get centroid labels for datasets
+    letter_centroid_data = image_array[:,-1] #get centroid labels for datasets
     letter_centroid_data = numpy.reshape(letter_centroid_data,(int(len(letter_centroid_data)/16), 16))
 
-
     # put letter/nonletter centroid data through translator
-    letter_data = cdb.build_translated_letter_centroid_labels(letter_centroid_data)
+    data_array = cdb.build_translated_letter_centroid_labels(letter_centroid_data)
+
+    #sample_index = 6167
+    #rebuild_32x32(data_array[sample_index], sample_index)
 
 
-    #rebuild_32x32(letter_data[sample_index], sample_index)
-
-
-    Bias = numpy.full((len(letter_data),1), 1)
+    Bias = numpy.full((len(data_array),1), 1)
 
     #concatenate Bias and Classes to a super letter_array
-    letter_array = numpy.concatenate((Bias, letter_data), axis=1)
-
+    data_array = numpy.concatenate((Bias, data_array), axis=1)
 
     NEURONS = 50+1
 
@@ -107,7 +100,7 @@ if __name__ == "__main__":
     detected_letters_index = []
     not_a_letter = 0
 
-    print("Rows of data:", len(letter_array))
+    print("Rows of data:", len(data_array))
 
     # confusion matrix
     true_positive = 0
@@ -118,21 +111,19 @@ if __name__ == "__main__":
     pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
     print("\nLogical Threads being used:", multiprocessing.cpu_count() - 1)
 
-    start = time.time()#Start Timer
+    print(data_array[0])
 
-    print(letter_array[0])
-
-    heatMap = HeatMapBuilder.HeatMap(756, 1008, len(letter_array), 4)
+    heatMap = HeatMapBuilder.HeatMap(756, 1008, len(data_array), 4)
     heatMap.print_dimensions()
 
-    for i in range(len(letter_array)):
+    for i in range(len(data_array)):
         print("Sample: ", i)
         # forward calculation
         hidden_layer_z = numpy.ones(NEURONS)
 
         # zip and send data to function for z values
-        letter_array_i = numpy.full((NEURONS, len(letter_array[i, :])), letter_array[i])
-        values = list(zip(letter_array_i, neuron_weights))
+        data_array_i = numpy.full((NEURONS, len(data_array[i, :])), data_array[i])
+        values = list(zip(data_array_i, neuron_weights))
         return_value = pool.starmap(calculate_z, values)
 
         if return_value:
@@ -151,9 +142,10 @@ if __name__ == "__main__":
 
         # Confusion Matrix Logic
         if prediction == 1:
-            heatMap.update_heat_map(i)
+            None
         else:
             not_a_letter += 1
+            heatMap.update_heat_map(i)
 
         print("prediction", prediction)
 
@@ -163,9 +155,9 @@ if __name__ == "__main__":
     end = time.time()
 
     print("Hits:", detected_letters)
-    print("letter %:", detected_letters*100 / len(letter_array), "%")
+    print("letter %:", detected_letters*100 / len(data_array), "%")
     print("Non_letter hits:", not_a_letter)
-    print("Non_letter %:", not_a_letter*100 / len(letter_array), "%")
+    print("Non_letter %:", not_a_letter*100 / len(data_array), "%")
 
     print("Testing Time:", end - start)
 
