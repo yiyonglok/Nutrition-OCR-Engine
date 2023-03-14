@@ -1,9 +1,9 @@
 import numpy as np
 
 
-def build_centroid_dictionary():
+def build_centroid_dictionary(centroid_file_path):
     # load centroid data
-    with open('100centroids/centroid_data_100centroids.npy', 'rb') as file:
+    with open(centroid_file_path, 'rb') as file:
         centroid_data = np.load(file)
 
     # init and build centroid dictionary, keys/centroids are integers 0-63
@@ -14,17 +14,17 @@ def build_centroid_dictionary():
     return centroid_dictionary
 
 
-def build_translated_letter_centroid_labels(letter_centroid_labels):
+def build_translated_letter_centroid_labels(letter_centroid_labels, centroid_file_path):
     # load letter centroids
     #with open('letter_centroid_labels.npy', 'rb') as file:
     #    letter_centroid_labels = np.load(file)
 
     # load centroid data
-    with open('100centroids/centroid_data_100centroids.npy', 'rb') as file:
+    with open(centroid_file_path, 'rb') as file:
         centroid_data = np.load(file)
 
     # build dictionary to translate centroids
-    centroid_dictionary = build_centroid_dictionary()
+    centroid_dictionary = build_centroid_dictionary(centroid_file_path)
 
     # init translated/expanded letter centroid labels array, 62992x1024 (16*64)
     translated_letter_centroid_labels = np.empty(
