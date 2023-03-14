@@ -1,59 +1,66 @@
 import numpy
 import skimage.io
+from PIL import Image
 import os
 
-
-# get images from within the project folder
-def GetImagesByFileName(file_name):
+def get_image_paths(path):
     files = []
-    for r, d, f in os.walk(file_name):
+    for r, d, f in os.walk(path):
         for file in f:
             if '.png' in file or '.jpg' in file:
                 files.append(os.path.join(r, file))
     return files
 
-
-# read images that are letters, do not need re-sizing
-def ReadLetterImages(file_name):
-    load_letters = GetImagesByFileName(file_name)
-
-    data_array = []
-    for file in load_letters:
-        letter = skimage.io.imread(file, as_gray=True)
-        if len(data_array) == 0:
-            data_array = numpy.array(Sample(letter))
-        else:
-            data_array = numpy.concatenate((data_array, Sample(letter)), axis=0)
-
-    data_array = numpy.array(data_array)
-    return data_array
-
-
-# read images that are not letters, need resizing
-def ReadNonLetterImages(file_name):
-    load_nonletters = GetImagesByFileName(file_name)
-
-    data_array = []
-    for file in load_nonletters:
-        nonletter = skimage.io.imread(file, as_gray=True)
-        nonletter = AddBorder(nonletter)
-        while len(nonletter) > 32:
-            nonletter = AveragePool(nonletter)
-        if len(data_array) == 0:
-            data_array = numpy.array(Sample(nonletter))
-        else:
-            data_array = numpy.concatenate((data_array, Sample(nonletter)), axis=0)
-    return data_array
-
-
-# specific to file names with format _______
-def ParseImageName(file_name):
-    file_path = file_name.split("\\")
+def image_name_parser(filename):
+    file_path = filename.split("\\")
     return int(file_path[2][3:6])
 
 
-# helper method to divide images into 8x8 samples
-def Sample(image):
+def read_letter_images():
+    load_letters = get_image_paths("Char74k_32x32")
+
+    #load_letters = load_letters[:10]
+    print(len(load_letters))
+
+    data_array = []
+
+    for file in load_letters:
+        #print(file)
+        letter = skimage.io.imread(file, as_gray=True)
+        if len(data_array) == 0:
+            data_array = numpy.array(sampler(letter))
+        else:
+            data_array = numpy.concatenate((data_array, sampler(letter)), axis=0)
+
+    data_array = numpy.array(data_array)
+    # print(data_array[-1])
+
+    # numpy.save("Unshuffled_datafile", data_array)
+    return data_array
+
+def image_resize(image_path):
+    image = Image.open(image_path)
+    new_image = image.resize((32,32))
+    new_image.save(image_path)
+
+
+def image_whitener(file):
+    nonletter = skimage.io.imread(file, as_gray=True)
+    print("Image pixel value mean:", numpy.mean(nonletter))
+    nonletter = nonletter + numpy.mean(nonletter)
+    image = Image.fromarray(nonletter)
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
+    new_file_path = file.split("\\")
+    new_file = new_file_path[-1].split(".")
+    s = "\\"
+    new_file_path = s.join(new_file_path[:-1])
+    new_file_path = new_file_path + "\\" +str(new_file[0]) + "_whitened.jpg"
+    print(new_file_path)
+    image.save(new_file_path)
+
+
+def sampler(image):
     image_sample = []
     temp_array = []
     for column in range(0, len(image[0]), 8):
@@ -63,21 +70,59 @@ def Sample(image):
     return temp_array
 
 
-# resize images to 32x32 format by adding pixels to the border
-def AddBorder(image):
-    size = len(image)
-    zeros = numpy.zeros((size, int((256 - size) / 2)))
-    image = numpy.concatenate((zeros, image), axis=1)
-    image = numpy.concatenate((image, zeros), axis=1)
+def delete_bad_image(file):
+    print(file)
+    if "whitened.jpg" in file:
+        print("yes")
+        os.remove(file)
 
-    zeros = numpy.zeros((int((256 - size) / 2), 256))
-    image = numpy.concatenate((zeros, image), axis=0)
-    image = numpy.concatenate((image, zeros), axis=0)
+
+def read_nonletter_images():
+    load_nonletters = get_image_paths("non_letters")
+    print(len(load_nonletters))
+    #load_nonletters = load_nonletters[:2]
+
+    data_array = []
+    count = 0
+    for file in load_nonletters:
+        print("Progress:", str(count*100/len(load_nonletters)), "%")
+
+        #print(file)
+        nonletter = skimage.io.imread(file, as_gray=True)
+
+        if len(data_array) == 0:
+            data_array = numpy.array(sampler(nonletter))
+        else:
+            data_array = numpy.concatenate((data_array, sampler(nonletter)), axis=0)
+        count += 1
+
+    return data_array
+
+    #print(len(data_array))
+    #print(len(data_array[0]))
+    #print(len(data_array))
+
+    # iimage = Image.fromarray(data_array[0])
+    # if iimage.mode != 'RGB':
+    #     iimage = iimage.convert('RGB')
+    # iimage.save("test-pic-2.jpg")
+
+
+def add_border(image):
+    size = len(image)
+    filler = numpy.full((size, int((256 - size) / 2)), 255)
+    image = numpy.concatenate((filler, image), axis=1)
+    image = numpy.concatenate((image, filler), axis=1)
+
+    filler = numpy.full((int((256 - size) / 2), 256), 255)
+    image = numpy.concatenate((filler, image), axis=0)
+    image = numpy.concatenate((image, filler), axis=0)
     return image
 
 
-# shrink images by taking average value of 4 pixels and combining into 1 pixel
-def AveragePool(image):
+def average_pooling(image):
+    print(len(image))
+    # use max pooling to shrink image
     new_image = []
     for i in range(0, len(image), 2):
         row = []
@@ -86,28 +131,26 @@ def AveragePool(image):
             calculate_avg = calculate_avg / 4
             row.append(calculate_avg)
         new_image.append(row)
-
+    print(len(image))
     return numpy.array(new_image)
 
 
 if __name__ == "__main__":
-    letters = read_letter_images()
+    #letters = read_letter_images()
     nonletters = read_nonletter_images()
 
-    letters_length = len(letters)
+    #letters_length = len(letters)
     nonletters_length = len(nonletters)
 
-    print(len(letters))
+    #print(len(letters))
     print(len(nonletters))
 
-    unshuffled_data = numpy.concatenate((letters, nonletters), axis=0)
+    #unshuffled_data = numpy.concatenate((letters, nonletters), axis=0)
+    numpy.save("nonletter_data_array.npy", nonletters)
 
-    numpy.save("unshuffled_unlabeled_data", unshuffled_data)
+    #class_one = numpy.full((letters_length, 1), 1)
+    #class_two = numpy.full((nonletters_length, 1), 0)
+    #classes = numpy.concatenate((class_one, class_two), axis=0)
 
-    class_one = numpy.full((letters_length, 1), 1)
-    class_two = numpy.full((nonletters_length, 1), 0)
-    classes = numpy.concatenate((class_one, class_two), axis=0)
-
-    unshuffled_data = numpy.concatenate((unshuffled_data, classes), axis=1)
-
-    numpy.save("unshuffled_labeled_data", unshuffled_data)
+    #unshuffled_data = numpy.concatenate((unshuffled_data, classes), axis=1)
+    #numpy.save("unshuffled_labeled_data", unshuffled_data)
