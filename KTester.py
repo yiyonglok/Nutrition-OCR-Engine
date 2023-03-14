@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 
@@ -6,13 +7,16 @@ def CentroidDistance(data_array, centroids):
     label = np.zeros(len(distance))
 
     for i in range(len(data_array)):
+        if (i % (len(data_array)/10)) < 1:
+            print(f"Progress: {math.floor(i*100/len(data_array))}%")
         for j in range(len(distance[i])):
             distance[i][j] = np.linalg.norm(data_array[i][:64] - centroids[j])
 
     return label + np.argmin(distance, axis=1)
 
 
-def LabelData(data_file, centroid_file,file_name):
+def LabelData(data_file, centroid_file, file_name):
+    print("Labelling:", data_file)
     with open(centroid_file, 'rb') as opened_file:
         centroids = np.load(opened_file)
 
@@ -32,5 +36,13 @@ def LabelData(data_file, centroid_file,file_name):
 #Call function label data and pass it an unlablled data file, centroid file, and new file name to create
 #a npy file with centroid labelled data
 
+if __name__ == "__main__":
 
+
+    LabelData("nonletter_data_array.npy",
+              "200centroids/centroid_data_200centroids.npy",
+              "200centroids/nonletter_data_200centroids")
+    LabelData("unshuffled_letter_data.npy",
+              "200centroids/centroid_data_200centroids.npy",
+              "200centroids/letter_data_200centroids")
 
