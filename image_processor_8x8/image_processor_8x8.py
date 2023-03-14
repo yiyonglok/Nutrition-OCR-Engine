@@ -4,7 +4,7 @@ import numpy as np
 
 VALID_FORMATS = (".jpeg", ".jpg", ".png")
 SAMPLE_SIZE = 32
-MAX_RESOLUTION = (720, 1080)
+MAX_RESOLUTION = (1080, 1080)
 REDUCTION_FACTOR = 4
 
 def resize_image(img):
@@ -130,5 +130,5 @@ def single_image_processor(offset=4, image_path=None, save_file=False):
     return offset, image_data_8x8
 
 if __name__ == "__main__":
-    offset, image_data = single_image_processor(image_path="test.png")
+    offset, image_data = single_image_processor(image_path="images_to_process/nl_2.png", save_file=True)
     #print(offset)
