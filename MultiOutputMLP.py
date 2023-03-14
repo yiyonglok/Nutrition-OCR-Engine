@@ -1,4 +1,5 @@
 
+import math
 import numpy
 import matplotlib.pyplot
 import random
@@ -9,7 +10,7 @@ import centroid_dictionary_builder as cdb
 import data_reshaper
 
 
-warnings.filterwarnings('ignore')
+#warnings.filterwarnings('ignore')
 
 def activation_function(data_matrix, neuron_weights):
     #print("neuron w:", neuron_weights)
@@ -30,6 +31,7 @@ def relu_derivative(z):
 def softmax(z):
   '''Return the softmax output of a vector.'''
   z = z.T
+  z = numpy.interp(z, (z.min(),z.max()), (0, 10))
   softmax_z = numpy.round( numpy.exp(z) / sum(numpy.exp(z)), 3)
   return softmax_z.T
 
@@ -59,7 +61,7 @@ def generate_random_data(class_data_size):
     X = numpy.concatenate((X, X_classifiers), axis=1)
     return X
 
-def load_data(letter_datapath, non_letter_datapath):
+def load_data(letter_datapath, non_letter_datapath, centroid_file_path):
     print("Loading data...")
     with open(letter_datapath, 'rb') as opened_file:
         letter_array = numpy.load(opened_file)
@@ -75,14 +77,21 @@ def load_data(letter_datapath, non_letter_datapath):
     letter_centroid_data = numpy.reshape(letter_centroid_data, (int(len(letter_centroid_data) / 16), 16))
     non_letter_centroid_data = numpy.reshape(non_letter_centroid_data, (int(len(non_letter_centroid_data) / 16), 16))
 
+    #take subset of non-letter data equal to the number of each individual letter's dataset
+    non_letter_centroid_data = shuffle_data(non_letter_centroid_data)
+    non_letter_centroid_data = non_letter_centroid_data[:1016]
+    print(len(non_letter_centroid_data))
+
     # put letter/nonletter centroid data through translator
-    letter_data = cdb.build_translated_letter_centroid_labels(letter_centroid_data)
-    non_letter_data = cdb.build_translated_letter_centroid_labels(non_letter_centroid_data)
+    letter_data = cdb.build_translated_letter_centroid_labels(letter_centroid_data, centroid_file_path)
+    non_letter_data = cdb.build_translated_letter_centroid_labels(non_letter_centroid_data, centroid_file_path)
 
     X = numpy.concatenate((letter_data, non_letter_data), axis=0)
 
     #reshape the 32x32's properly to recreate the letter representations
-    X = data_reshaper.reshape_letter_data(X, save_images=False, save_file=False)
+    X = data_reshaper.reshape_letter_data(X)
+
+    #X = feature_pooling(X)
 
     Bias = numpy.full((len(X), 1), 1)
 
@@ -113,6 +122,24 @@ def separate_label(X):
     X_classifiers = X.T[-1]
     X = X[:, :-1]
     return X_classifiers, X
+
+def feature_pooling(X):
+    pooled_X = []
+
+    #X = numpy.interp(X, (X.min(),X.max()), (0, 1))
+
+    for row in X:
+        temp_array = []
+        image = numpy.reshape(row, (int(math.sqrt(len(row))), int(math.sqrt(len(row)))))
+        halfway = int(numpy.size(image, axis=1)/2)
+        #print(halfway)
+        temp_array.append(numpy.sum(numpy.array(image[0:halfway, 0:halfway])))
+        temp_array.append(numpy.sum(numpy.array(image[0:halfway, halfway:])))
+        temp_array.append(numpy.sum(numpy.array(image[halfway:, 0:halfway])))
+        temp_array.append(numpy.sum(numpy.array(image[halfway:, halfway:])))
+        pooled_X.append(temp_array)
+    #print(pooled_X)
+    return pooled_X
 
 
 def initialize_neural_network(HNEURONS, ONEURONS, X, X_classifiers):
@@ -149,14 +176,14 @@ def forward_propagation(X, hidden_weights, output_weights):
     # print("Hidden Layer Z:", hidden_layer_z)
     # get output z vector
     output_z = numpy.dot(hidden_layer_z, output_weights.T)
-    # print("Output Z:", output_z)
+    #print("Output Z:", output_z)
     softmax_z = softmax(output_z)
     # print("Softmax Z:", softmax_z)
     return hidden_layer_z, softmax_z
 
 def backwards_propagation(X, X_classifiers_vectors, alpha, hidden_weights, output_weights, hidden_layer_z, softmax_z):
     output_error = (softmax_z - X_classifiers_vectors).T
-    # print("Output Error:", output_error)
+    #print("Output Error:", output_error)
     delta_output_weights = (1 / len(X) * numpy.dot(output_error, hidden_layer_z))
     # print(delta_output_weights)
     error = (numpy.dot(output_weights.T, output_error)).T * (relu_derivative(hidden_layer_z))
@@ -187,9 +214,13 @@ def train_model(EPOCHS, X, X_classifiers, X_classifiers_vectors, alpha, hidden_w
         prediction = predict(softmax_z)
         total_error = numpy.sum(prediction != X_classifiers)
 
-        if (epoch % (EPOCHS/10)) == 0:
+
+        if (epoch % (EPOCHS/10)) == 0 or (epoch == EPOCHS - 1):
             #print("predictions: ", prediction)
             #print("expecteds:", X_classifiers)
+            error_labels = X_classifiers[prediction != X_classifiers]
+            print("Error Labels:", collections.Counter(error_labels))
+            print("Predictions:", collections.Counter(prediction))
             print("Total Errors:", total_error)
             print("Accuracy:", (len(X) - total_error) * 100 / len(X), "% \n")
 
