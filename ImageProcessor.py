@@ -16,21 +16,28 @@ def image_name_parser(filename):
     return int(file_path[2][3:6])
 
 
-def read_letter_images():
-    load_letters = get_image_paths("Char74k_32x32")
+def read_letter_images(filepath):
+    load_letters = get_image_paths(filepath)
 
     #load_letters = load_letters[:10]
     print(len(load_letters))
 
     data_array = []
-
+    progress = 0
     for file in load_letters:
-        #print(file)
+        print(f"Progress: {progress*100/len(load_letters)}%")
+        if filepath != "non_letters":
+            classifier = image_name_parser(file)
+        else:
+            classifier = 0
+
+        #print(classifier)
         letter = skimage.io.imread(file, as_gray=True)
         if len(data_array) == 0:
-            data_array = numpy.array(sampler(letter))
+            data_array = numpy.array(sampler(letter, classifier))
         else:
-            data_array = numpy.concatenate((data_array, sampler(letter)), axis=0)
+            data_array = numpy.concatenate((data_array, sampler(letter, classifier)), axis=0)
+        progress += 1
 
     data_array = numpy.array(data_array)
     # print(data_array[-1])
@@ -60,13 +67,13 @@ def image_whitener(file):
     image.save(new_file_path)
 
 
-def sampler(image):
+def sampler(image, classifier):
     image_sample = []
     temp_array = []
     for column in range(0, len(image[0]), 8):
         for row in range(0, len(image[0]), 8):
             image_sample.append(image[column:column + 8, row:row + 8])
-            temp_array.append(numpy.array([num for sublist in image_sample[-1] for num in sublist]))
+            temp_array.append(numpy.concatenate((numpy.array([num for sublist in image_sample[-1] for num in sublist]), [classifier])))
     return temp_array
 
 
@@ -77,8 +84,8 @@ def delete_bad_image(file):
         os.remove(file)
 
 
-def read_nonletter_images():
-    load_nonletters = get_image_paths("non_letters")
+def read_nonletter_images(filepath):
+    load_nonletters = get_image_paths(filepath)
     print(len(load_nonletters))
     #load_nonletters = load_nonletters[:2]
 
@@ -87,13 +94,15 @@ def read_nonletter_images():
     for file in load_nonletters:
         print("Progress:", str(count*100/len(load_nonletters)), "%")
 
+        classifier = 0
+
         #print(file)
         nonletter = skimage.io.imread(file, as_gray=True)
 
         if len(data_array) == 0:
-            data_array = numpy.array(sampler(nonletter))
+            data_array = numpy.array(sampler(nonletter, classifier))
         else:
-            data_array = numpy.concatenate((data_array, sampler(nonletter)), axis=0)
+            data_array = numpy.concatenate((data_array, sampler(nonletter, classifier)), axis=0)
         count += 1
 
     return data_array
