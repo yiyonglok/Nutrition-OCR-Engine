@@ -1,3 +1,4 @@
+
 import numpy as np
 import matplotlib.pyplot
 import random
@@ -10,7 +11,7 @@ def NormalizeData(data_array):
 
     data_array = data_array.astype(float)
 
-    for i in range(SAMPLE_SIZE):
+    for i in range(len(data_array)):
         mean = np.mean(data_array[i][:64])
         sd = np.std(data_array[i][:64])
         data_array[i][:64] -= mean
@@ -24,7 +25,7 @@ def SquishData(data_array):
     return (data_array - np.min(data_array)) / (np.max(data_array) - np.min(data_array))
 
 
-def GenerateCentroids():
+def GenerateCentroids(CENTROID_COUNT):
 
     lower_bound = 0
     upper_bound = 255
@@ -34,9 +35,9 @@ def GenerateCentroids():
 
 def CentroidDistance(data_array, centroids):
 
-    distance = np.zeros((SAMPLE_SIZE, len(centroids)))
+    distance = np.zeros((len(data_array), len(centroids)))
 
-    for i in range(SAMPLE_SIZE):
+    for i in range(len(data_array)):
         for j in range(len(distance[i])):
             distance[i][j] = np.linalg.norm(data_array[i][:64]-centroids[j])
 
@@ -51,7 +52,7 @@ def LabelData(distance):
 
 def CentroidMean(label, data_array, centroids):
 
-    new_centroids = np.zeros((CENTROID_COUNT, 64))
+    new_centroids = np.zeros((len(centroids), 64))
 
     for i in range(len(label)):
         new_centroids[int(label[i])] += data_array[i][:64]
@@ -69,9 +70,9 @@ def CentroidMean(label, data_array, centroids):
     return new_centroids
 
 
-def CentroidDifference(new_centroid,centroids):
+def CentroidDifference(new_centroid, centroids):
 
-    difference = np.zeros(CENTROID_COUNT)
+    difference = np.zeros(len(centroids))
 
     for i in range(len(centroids)):
         difference[i] = np.linalg.norm(new_centroid[i]-centroids[i])
@@ -80,8 +81,8 @@ def CentroidDifference(new_centroid,centroids):
 
 def FeatureMapping(x,c,label):
 
-    out = np.zeros(SAMPLE_SIZE)
-    for i in range(SAMPLE_SIZE):
+    out = np.zeros(len(x))
+    for i in range(len(x)):
         z = np.linalg.norm(x[i][:64]-c[int(label[i])])
         mean = np.mean(x[i][:64])
         norm = mean - z
@@ -99,15 +100,16 @@ def calculate_z(letter_array_i, neuron_weights):
 if __name__ == "__main__":
 
     #read in data from numpy file
-    with open('Unshuffled_datafile.npy', 'rb') as opened_file:
+    with open('unshuffled_letter_data_cleaned_faizan.npy', 'rb') as opened_file:
         data_array = np.load(opened_file)
 
     #shuffle data
     indexArray = list(range(np.size(data_array, 0)))
     data_array = data_array[indexArray]
+    #data_array = data_array[29456:29456+12600]
 
     SAMPLE_SIZE = len(data_array)
-    CENTROID_COUNT = 150
+    CENTROID_COUNT = 200
 
     #Squish Data
     # data_array = SquishData(data_array)
@@ -116,7 +118,7 @@ if __name__ == "__main__":
     # data_array = NormalizeData(data_array)
 
     #Kmeans
-    centroids = GenerateCentroids()
+    centroids = GenerateCentroids(CENTROID_COUNT)
     previous_centroids = centroids
     difference = np.zeros(CENTROID_COUNT)
     difference.fill(200)
@@ -138,13 +140,6 @@ if __name__ == "__main__":
     new_array = data_array[:len(label)]
     new_array = np.concatenate((new_array, np.c_[label]), axis=1)
 
-
-    np.save("centroid_data_150points", centroids)
-    np.save("data_array_150points", new_array)
-
-
-
-
-
-
+    np.save(f"centroid_data_{CENTROID_COUNT}centroids", centroids)
+    #np.save(f"data_array_{CENTROID_COUNT}centroids", new_array)
 
