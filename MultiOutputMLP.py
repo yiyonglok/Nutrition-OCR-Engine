@@ -61,7 +61,7 @@ def generate_random_data(class_data_size):
     X = numpy.concatenate((X, X_classifiers), axis=1)
     return X
 
-def load_data(letter_datapath, non_letter_datapath, centroid_file_path):
+def load_data(letter_datapath, non_letter_datapath, centroid_file_path, binary=False):
     print("Loading data...")
     with open(letter_datapath, 'rb') as opened_file:
         letter_array = numpy.load(opened_file)
@@ -77,9 +77,25 @@ def load_data(letter_datapath, non_letter_datapath, centroid_file_path):
     letter_centroid_data = numpy.reshape(letter_centroid_data, (int(len(letter_centroid_data) / 16), 16))
     non_letter_centroid_data = numpy.reshape(non_letter_centroid_data, (int(len(non_letter_centroid_data) / 16), 16))
 
+    each_letter_total_rows = 0
+
+    Classes = []
+    for i in range(0, len(letter_array), 16):
+        if binary:
+            Classes.append([int(1)])
+            each_letter_total_rows += 1
+        else:
+            if letter_array[i][-2] == 1:
+                each_letter_total_rows += 1
+            Classes.append(letter_array[i][-2])
+
+    if each_letter_total_rows > len(non_letter_centroid_data):
+        each_letter_total_rows = None
+    print(each_letter_total_rows)
+
     #take subset of non-letter data equal to the number of each individual letter's dataset
     non_letter_centroid_data = shuffle_data(non_letter_centroid_data)
-    non_letter_centroid_data = non_letter_centroid_data[:1016]
+    non_letter_centroid_data = non_letter_centroid_data[:each_letter_total_rows]
     print(len(non_letter_centroid_data))
 
     # put letter/nonletter centroid data through translator
@@ -94,10 +110,6 @@ def load_data(letter_datapath, non_letter_datapath, centroid_file_path):
     #X = feature_pooling(X)
 
     Bias = numpy.full((len(X), 1), 1)
-
-    Classes = []
-    for i in range(0, len(letter_array), 16):
-        Classes.append(letter_array[i][-2])
 
     Classes = numpy.reshape(numpy.array(Classes), (len(Classes), 1))
     Class_not = numpy.full((len(non_letter_data), 1), 0)
@@ -229,7 +241,7 @@ def train_model(EPOCHS, X, X_classifiers, X_classifiers_vectors, alpha, hidden_w
 
 
 def save_weights(path, output_neurons, hidden_weights, output_weights):
-    if output_neurons > 1:
+    if output_neurons > 2:
         hw_file_path = f"{path}/mo_hidden_weights"
         ow_file_path = f"{path}/mo_output_weights"
         numpy.save(hw_file_path, hidden_weights)
