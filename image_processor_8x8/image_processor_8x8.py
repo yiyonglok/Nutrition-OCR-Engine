@@ -51,6 +51,13 @@ def multi_image_processor(offset=4):
             width, height = img.size
             img = ImageOps.grayscale(img)
             img_pixel_data = img.load()
+            #boost contrast
+            for i_index in range(height):
+                for j_index in range(width):
+                    if img_pixel_data[j_index,i_index] > 110:
+                        img_pixel_data[j_index,i_index] = 255
+                    else:
+                        img_pixel_data[j_index,i_index] = 0
         
         #determine max index to take sample within image dimensions
         max_width_index = determine_max_valid_index(SAMPLE_SIZE, offset, width)
