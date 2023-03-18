@@ -14,11 +14,11 @@ if __name__ == "__main__":
     EPOCHS = 300
     binary_output = True
     directory_path = "150centroids"
-    letter_data_path = f"{directory_path}/letter_data_150centroids_faizan.npy"
-    non_letter_data_path = f"{directory_path}/nonletter_data_150centroids_faizan.npy"
-    centroid_file_path = f"{directory_path}/centroid_data_150centroids_faizan.npy"
+    letter_data_path = f"{directory_path}/letter_data_150centroids_alex.npy"
+    non_letter_data_path = f"{directory_path}/nonletter_data_150centroids_alex.npy"
+    centroid_file_path = f"{directory_path}/centroid_data_150centroids_alex.npy"
 
-    X = mlp.load_data(letter_data_path, non_letter_data_path, centroid_file_path, binary=binary_output)
+    X = mlp.load_training_data(letter_data_path, non_letter_data_path, centroid_file_path, binary=binary_output)
     X = mlp.shuffle_data(X)
     #X = mlp.shuffle_data(mlp.generate_random_data(10000))
     #print(len(X))

@@ -35,7 +35,7 @@ def softmax(z):
   softmax_z = numpy.round( numpy.exp(z) / sum(numpy.exp(z)), 3)
   return softmax_z.T
 
-def generate_random_data(class_data_size):
+def generate_random_training_data(class_data_size):
     mean_one = [-6, 0, -6]
     covariance_one = [[2, 1, 1], [1, 3, 1], [1, 1, 2]]
     mean_two = [6, 0, 6]
@@ -61,7 +61,7 @@ def generate_random_data(class_data_size):
     X = numpy.concatenate((X, X_classifiers), axis=1)
     return X
 
-def load_data(letter_datapath, non_letter_datapath, centroid_file_path, binary=False):
+def load_training_data(letter_datapath, non_letter_datapath, centroid_file_path, binary=False):
     print("Loading data...")
     with open(letter_datapath, 'rb') as opened_file:
         letter_array = numpy.load(opened_file)
@@ -118,6 +118,36 @@ def load_data(letter_datapath, non_letter_datapath, centroid_file_path, binary=F
     # concatenate Bias and Classes to a super letter_array
     X = numpy.concatenate((Bias, X), axis=1)
     X = numpy.concatenate((X, Classes), axis=1)
+    return X
+
+
+def load_testing_data(testing_data, centroid_file_path):
+    print("Loading data...")
+    if isinstance(testing_data, str):
+        with open(testing_data, 'rb') as opened_file:
+            testing_data = numpy.load(opened_file)
+    else:
+        testing_data = testing_data
+
+    print("Preparing test data...")
+    testing_centroid_data = testing_data[:, -1]  # get centroid labels for datasets
+
+    # reshape labelled array into collections of the original images represented by labels in 4x4 labels
+    testing_centroid_data = numpy.reshape(testing_centroid_data, (int(len(testing_centroid_data) / 16), 16))
+
+    # put letter/nonletter centroid data through translator
+    testing_data = cdb.build_translated_letter_centroid_labels(testing_centroid_data, centroid_file_path)
+
+    X = testing_data
+
+    #reshape the 32x32's properly to recreate the letter representations
+    X = data_reshaper.reshape_letter_data(X)
+
+    #X = feature_pooling(X)
+    Bias = numpy.full((len(X), 1), 1)
+
+    # concatenate Bias and Classes to a super letter_array
+    X = numpy.concatenate((Bias, X), axis=1)
     return X
 
 
@@ -193,6 +223,7 @@ def forward_propagation(X, hidden_weights, output_weights):
     # print("Softmax Z:", softmax_z)
     return hidden_layer_z, softmax_z
 
+
 def backwards_propagation(X, X_classifiers_vectors, alpha, hidden_weights, output_weights, hidden_layer_z, softmax_z):
     output_error = (softmax_z - X_classifiers_vectors).T
     #print("Output Error:", output_error)
@@ -240,6 +271,14 @@ def train_model(EPOCHS, X, X_classifiers, X_classifiers_vectors, alpha, hidden_w
     return total_error_list
 
 
+def run_model(X, hidden_weights, output_weights):
+    hidden_layer_z, softmax_z = forward_propagation(X, hidden_weights, output_weights)
+    prediction = predict(softmax_z)
+    print("Predictions:", collections.Counter(prediction))
+
+    return prediction
+
+
 def save_weights(path, output_neurons, hidden_weights, output_weights):
     if output_neurons > 2:
         hw_file_path = f"{path}/mo_hidden_weights"
@@ -256,7 +295,7 @@ def save_weights(path, output_neurons, hidden_weights, output_weights):
 
 if __name__ == "__main__":
 
-    X = shuffle_data(generate_random_data(1000))
+    X = shuffle_data(generate_random_training_data(1000))
     X_classifiers, X = separate_label(X)
 
     alpha = 0.001

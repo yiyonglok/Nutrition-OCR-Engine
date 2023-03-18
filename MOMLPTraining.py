@@ -10,14 +10,15 @@ import collections
 
 if __name__ == "__main__":
     alpha = 0.0001
-    hidden_neurons = 500
-    EPOCHS = 1000
-    directory_path = "200centroids"
-    letter_data_path = f"{directory_path}/letter_data_200centroids.npy"
-    non_letter_data_path = f"{directory_path}/nonletter_data_200centroids.npy"
-    centroid_file_path = f"{directory_path}/centroid_data_200centroids.npy"
+    hidden_neurons = 1000
+    EPOCHS = 500
+    binary_output = False
+    directory_path = "150centroids"
+    letter_data_path = f"{directory_path}/letter_data_150centroids_alex.npy"
+    non_letter_data_path = f"{directory_path}/nonletter_data_150centroids_alex.npy"
+    centroid_file_path = f"{directory_path}/centroid_data_150centroids_alex.npy"
 
-    X = mlp.load_data(letter_data_path, non_letter_data_path, centroid_file_path)
+    X = mlp.load_training_data(letter_data_path, non_letter_data_path, centroid_file_path, binary_output)
     X = mlp.shuffle_data(X)
     #X = mlp.shuffle_data(mlp.generate_random_data(10000))
     #print(len(X))
