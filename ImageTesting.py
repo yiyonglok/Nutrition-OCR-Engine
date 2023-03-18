@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     start = time.time()  # Start Timer
 
-    offset, image_data, image_width, image_height = ip8.single_image_processor(image_path="images_to_process/Calories.png",
+    offset, image_data, image_width, image_height, img_pixel_data = ip8.single_image_processor(image_path="images_to_process/Calories.png",
                                                                                save_file=True)
 
     image_array = kt.LabelData(image_data,
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     X = mlp.load_testing_data(image_array, centroid_file_path)
 
-    heatMap = HeatMapBuilder.HeatMap(image_width, image_height, len(X), offset)
+    heatMap = HeatMapBuilder.HeatMap(image_width, image_height, len(X), offset, img_pixel_data)
     heatMap.print_dimensions()
 
     #Test with MLP
@@ -75,6 +75,6 @@ if __name__ == "__main__":
     text_file.write(time_string)
     text_file.close()
 
-    heatMap.print_heat_map()
+    heatMap.print_heat_map(superimpose=True)
 
     exit()
