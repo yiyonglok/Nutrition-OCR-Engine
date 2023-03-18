@@ -35,7 +35,7 @@ if __name__ == "__main__":
     offset, image_data, image_width, image_height = ip8.single_image_processor(image_path="images_to_process/Calories.png",
                                                                                save_file=True)
 
-    image_array = kt.LabelData("images_to_process/Calories_8x8_data_single.npy",
+    image_array = kt.LabelData(image_data,
                  centroid_file_path,
                  f"{centroid_folder}/Calories_data_150centroids_faizan")
 
@@ -55,10 +55,13 @@ if __name__ == "__main__":
     for hit in hits[0]:
         heatMap.update_heat_map(hit)
 
-    print(mo_predictions)
     # open text file
     text_file = open("LetterRecognitions.txt", "w")
     text_file.write(str(mo_predictions))
+    text_file.close()
+
+    text_file = open("LetterRecognitionsBinaryFiltered.txt", "w")
+    text_file.write(str(mo_predictions[hits]))
     text_file.close()
 
     end = time.time()

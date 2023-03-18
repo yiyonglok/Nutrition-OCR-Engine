@@ -20,8 +20,11 @@ def LabelData(data_file, centroid_file, file_name):
     with open(centroid_file, 'rb') as opened_file:
         centroids = np.load(opened_file)
 
-    with open(data_file, 'rb') as opened_file:
-        data = np.load(opened_file)
+    if isinstance(data_file, str):
+        with open(data_file, 'rb') as opened_file:
+            data = np.load(opened_file)
+    else:
+        data = data_file
 
     label = CentroidDistance(data, centroids)
     label_data = data[:len(label)]
@@ -40,9 +43,16 @@ if __name__ == "__main__":
 
 
     LabelData("nonletter_data_array.npy",
-              "200centroids/centroid_data_200centroids.npy",
-              "200centroids/nonletter_data_200centroids")
-    LabelData("unshuffled_letter_data.npy",
-              "200centroids/centroid_data_200centroids.npy",
-              "200centroids/letter_data_200centroids")
+              "150centroids/centroid_data_150centroids_alex.npy",
+              "150centroids/nonletter_data_150centroids_alex")
+    LabelData("unshuffled_letter_data_cleaned_alex.npy",
+              "150centroids/centroid_data_150centroids_alex.npy",
+              "150centroids/letter_data_150centroids_alex")
+
+    LabelData("nonletter_data_array.npy",
+              "200centroids/centroid_data_200centroids_alex.npy",
+              "200centroids/nonletter_data_200centroids_alex")
+    LabelData("unshuffled_letter_data_cleaned_alex.npy",
+              "200centroids/centroid_data_200centroids_alex.npy",
+              "200centroids/letter_data_200centroids_alex")
 
