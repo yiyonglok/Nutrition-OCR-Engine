@@ -19,9 +19,17 @@ def resize_image(img):
 def determine_max_valid_index(sample_size, offset, dimension_len):
     indices = [i for i in range(0, dimension_len, offset)]
     i = -1
-    while (indices[i] + sample_size) > dimension_len - 1:
+    while (indices[i] + sample_size) > dimension_len:
         i -= 1
     return indices[i]
+
+
+def save_letter(image_matrix, name):
+    image = Image.fromarray(image_matrix)
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
+    file_path = f"{name}.jpg"
+    image.save(file_path)
 
 
 def sampler(image):
@@ -34,7 +42,25 @@ def sampler(image):
     return temp_array
 
 
-def multi_image_processor(offset=4):
+def rebuild_32x32(letter_data, sample_index):
+    letter_data = np.reshape(letter_data, (16, 64))
+
+    temp_array = []
+
+    for i in range(len(letter_data)):
+        temp_array.append(np.reshape(letter_data[i], (8, 8)))
+
+    temp_image = np.block([[temp_array[0], temp_array[1], temp_array[2], temp_array[3]],
+                              [temp_array[4], temp_array[5], temp_array[6], temp_array[7]],
+                              [temp_array[8], temp_array[9], temp_array[10], temp_array[11]],
+                              [temp_array[12], temp_array[13], temp_array[14], temp_array[15]]])
+
+    #temp_image = numpy.reshape(letter_data[0], (8, 8))
+    print(temp_image)
+    save_letter(temp_image, "ImageTestingOuput/image" + str(sample_index))
+
+
+def multi_image_processor(offset=4, save_image=False):
     # image paths list
     image_paths = []
     file_names = []
@@ -62,6 +88,12 @@ def multi_image_processor(offset=4):
                         img_pixel_data[j_index, i_index] = 255
                     else:
                         img_pixel_data[j_index, i_index] = 0
+
+        if save_image:
+            # get file name
+            file_name = image_path.split(".")[0]
+            file_name = file_name.split("\\")[1]
+            img.save(f"{file_name}.jpg")
 
         # determine max index to take sample within image dimensions
         max_width_index = determine_max_valid_index(SAMPLE_SIZE, offset, width)
@@ -110,13 +142,6 @@ def single_image_processor(offset=4, image_path=None, save_file=False):
         width, height = img.size
         img = ImageOps.grayscale(img)
         img_pixel_data = img.load()
-        # boost contrast
-        for i_index in range(height):
-            for j_index in range(width):
-                if img_pixel_data[j_index, i_index] > 110:
-                    img_pixel_data[j_index, i_index] = 255
-                else:
-                    img_pixel_data[j_index, i_index] = 0
 
     # determine max index to take sample within image dimensions
     max_width_index = determine_max_valid_index(SAMPLE_SIZE, offset, width)
@@ -145,9 +170,10 @@ def single_image_processor(offset=4, image_path=None, save_file=False):
     if save_file:
         np.save(f"{file_name}_8x8_data_single", image_data_8x8)
 
-    return offset, image_data_8x8, width, height, img_pixel_data
+    print("image data 8x8 shape: ", np.shape(image_data_8x8))
+    return offset, image_data_8x8, width, height
 
 
 if __name__ == "__main__":
-    offset, image_data = single_image_processor(image_path="images_to_process/nl_2.png", save_file=True)
+    offset, image_data = multi_image_processor(save_image=True)
     # print(offset)
