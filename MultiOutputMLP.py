@@ -1,4 +1,3 @@
-
 import math
 import numpy
 import matplotlib.pyplot
@@ -8,6 +7,7 @@ import time
 import collections
 import centroid_dictionary_builder as cdb
 import data_reshaper
+from PIL import Image
 
 
 #warnings.filterwarnings('ignore')
@@ -135,13 +135,20 @@ def load_testing_data(testing_data, centroid_file_path):
     # reshape labelled array into collections of the original images represented by labels in 4x4 labels
     testing_centroid_data = numpy.reshape(testing_centroid_data, (int(len(testing_centroid_data) / 16), 16))
 
+    print("testing data before", testing_data)
+
     # put letter/nonletter centroid data through translator
     testing_data = cdb.build_translated_letter_centroid_labels(testing_centroid_data, centroid_file_path)
+
+    print("testing data after", testing_data)
 
     X = testing_data
 
     #reshape the 32x32's properly to recreate the letter representations
-    X = data_reshaper.reshape_letter_data(X)
+    X = data_reshaper.reshape_letter_data(X, save_images=True, crop_images=False)
+
+    reshaped_image = numpy.reshape(X[0], (32, 32))
+    print_hit_images(reshaped_image, f"reshaped_images/testing.jpg")
 
     #X = feature_pooling(X)
     Bias = numpy.full((len(X), 1), 1)
@@ -164,6 +171,14 @@ def separate_label(X):
     X_classifiers = X.T[-1]
     X = X[:, :-1]
     return X_classifiers, X
+
+
+def print_hit_images(X, name):
+    X = numpy.array(X)
+    image = Image.fromarray(X)
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
+    image.save(name + ".jpg")
 
 def feature_pooling(X):
     pooled_X = []
@@ -257,7 +272,6 @@ def train_model(EPOCHS, X, X_classifiers, X_classifiers_vectors, alpha, hidden_w
         prediction = predict(softmax_z)
         total_error = numpy.sum(prediction != X_classifiers)
 
-
         if (epoch % (EPOCHS/10)) == 0 or (epoch == EPOCHS - 1):
             #print("predictions: ", prediction)
             #print("expecteds:", X_classifiers)
@@ -268,13 +282,13 @@ def train_model(EPOCHS, X, X_classifiers, X_classifiers_vectors, alpha, hidden_w
             print("Accuracy:", (len(X) - total_error) * 100 / len(X), "% \n")
 
         total_error_list.append(total_error)
-    return total_error_list
+    return total_error_list, hidden_weights, output_weights
 
 
 def run_model(X, hidden_weights, output_weights):
+
     hidden_layer_z, softmax_z = forward_propagation(X, hidden_weights, output_weights)
     prediction = predict(softmax_z)
-    print("Predictions:", collections.Counter(prediction))
 
     return prediction
 
@@ -294,7 +308,8 @@ def save_weights(path, output_neurons, hidden_weights, output_weights):
 
 
 if __name__ == "__main__":
-
+    None
+'''
     X = shuffle_data(generate_random_training_data(1000))
     X_classifiers, X = separate_label(X)
 
@@ -318,3 +333,4 @@ if __name__ == "__main__":
     matplotlib.pyplot.plot(total_error_list)
     matplotlib.pyplot.title(label=f"Alpha: {alpha}")
     matplotlib.pyplot.show()
+'''
