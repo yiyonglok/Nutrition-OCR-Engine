@@ -19,9 +19,6 @@ def image_name_parser(filename):
 def read_letter_images(filepath):
     load_letters = get_image_paths(filepath)
 
-    #load_letters = load_letters[:10]
-    print(len(load_letters))
-
     data_array = []
     progress = 0
     for file in load_letters:
@@ -31,7 +28,6 @@ def read_letter_images(filepath):
         else:
             classifier = 0
 
-        #print(classifier)
         letter = skimage.io.imread(file, as_gray=True)
         if len(data_array) == 0:
             data_array = numpy.array(sampler(letter, classifier))
