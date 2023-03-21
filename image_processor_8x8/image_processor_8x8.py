@@ -178,7 +178,7 @@ def single_image_processor(offset=4, image_path=None, save_file=False):
         np.save(f"{file_name}_8x8_data_single", image_data_8x8)
 
     print("image data 8x8 shape: ", np.shape(image_data_8x8))
-    return offset, image_data_8x8, width, height
+    return offset, image_data_8x8, width, height, img_pixel_data
 
 
 if __name__ == "__main__":
