@@ -9,7 +9,7 @@ def save_letter(letter, count):
     image.save(file_path)
 
 
-def reshape_letter_data(letter_data, save_images=False, save_file=False):
+def reshape_letter_data(letter_data, save_images=False, save_file=False, crop_images=False):
     reshaped_letter_data = []
 
     for count, image in enumerate(letter_data):
@@ -35,6 +35,8 @@ def reshape_letter_data(letter_data, save_images=False, save_file=False):
                 for x_index in range(8):
                     letter_data_index += 1
                     reshaped_image[y+y_index][x+x_index] = pieces[piece][letter_data_index]
+        if crop_images:
+            reshaped_image = crop_image(reshaped_image)
         
         #flatten image
         flattened_image = []
@@ -57,6 +59,14 @@ def reshape_letter_data(letter_data, save_images=False, save_file=False):
 
     return reshaped_letter_data
 
+
+def crop_image(image):
+    image = np.array(image)
+    image[:, :5] = 255
+    image[:, -5:] = 255
+    image[:5, :] = 255
+    image[-5:, :] = 255
+    return image
 
 if __name__ == "__main__":
     with open('translated_letter_centroid_labels.npy', 'rb') as file:
