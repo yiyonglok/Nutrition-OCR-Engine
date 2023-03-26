@@ -16,6 +16,17 @@ def resize_image(img):
     return img
 
 
+def resize_image_by_height(img):
+    width, height = img.size
+    max_width, max_height = MAX_RESOLUTION
+    aspect_ratio = width / height
+    height_reduction = int(height - 40)
+    width_reduction = int(aspect_ratio * 40)
+    if (height > 40):
+        img = img.resize((width_reduction, height - height_reduction))
+    return img
+
+
 def determine_max_valid_index(sample_size, offset, dimension_len):
     indices = [i for i in range(0, dimension_len, offset)]
     i = -1
@@ -56,14 +67,13 @@ def dynamically_crop_image(image):
     image = np.array(image)
     width = len(image)
     b = np.min(image, axis=0)
-    d = np.min(image, axis=1)
 
     letter_width_endpoints = []
     letter_height_endpoints = []
 
     # crops sides
     is_space = False
-    for i in range(int(width/ 2), 0, -1):
+    for i in range(int(width/ 2), -1, -1):
         if not is_space and b[i] > 5:
             is_space = True
             image[:, :i] = 255
@@ -84,9 +94,11 @@ def dynamically_crop_image(image):
     #if not is_space:
     #    letter_width_endpoints.append(32)
 
+    d = np.min(image, axis=1)
+
     # crop top and bottom
     is_space = False
-    for i in range(int(width / 2), 0, -1):
+    for i in range(int(width / 2), -1, -1):
         if not is_space and d[i] > 5:
             is_space = True
             image[:i, :] = 255
@@ -107,19 +119,6 @@ def dynamically_crop_image(image):
     #if not is_space:
     #    letter_height_endpoints.append(32)
 
-    if len(letter_width_endpoints) == 2:
-        shift = letter_width_endpoints[0] - (width - letter_width_endpoints[1])
-        if shift < -1:
-            shift = abs(shift)
-            new_column = np.zeros((width, int(shift/2))) + 255
-            image = image[:, :-int(shift/2)]
-            image = np.concatenate((new_column, image), axis=1)
-
-        elif shift > 1:
-            new_column = np.zeros((width, int(shift/2))) + 255
-            image = image[:, int(shift/2):]
-            image = np.concatenate((image, new_column), axis=1)
-
     if len(letter_height_endpoints) == 2:
         shift = letter_height_endpoints[0] - (width - letter_height_endpoints[1])
         if shift < -1:
@@ -133,10 +132,24 @@ def dynamically_crop_image(image):
             image = image[int(shift/2):, :]
             image = np.concatenate((image, new_column), axis=0)
 
+    if len(letter_width_endpoints) == 2:
+        shift = letter_width_endpoints[0] - (width - letter_width_endpoints[1])
+        if shift < -1:
+            shift = abs(shift)
+            new_column = np.zeros((width, int(shift / 2))) + 255
+            image = image[:, :-int(shift / 2)]
+            image = np.concatenate((new_column, image), axis=1)
+
+        elif shift > 1:
+            new_column = np.zeros((width, int(shift / 2))) + 255
+            image = image[:, int(shift / 2):]
+            image = np.concatenate((image, new_column), axis=1)
+
     #print(letter_width_endpoints)
     #print("width of letter?", letter_width_endpoints[1] - letter_width_endpoints[0])
     #print("height of letter?", letter_height_endpoints[1] - letter_height_endpoints[0])
     #print("image shape now: ", np.shape(image))
+
     return image
 
 
@@ -219,7 +232,7 @@ def multi_image_processor(offset=4, save_image=False):
         np.save(f"{file_names[image_count]}_8x8_data", image_data_8x8)
 
 
-def single_image_processor(offset=4, image_path=None, save_file=False, crop_image=True, remove_bad_samples=True):
+def single_image_processor(offset=4, image_path=None, save_file=False, crop_image=True, remove_bad_samples=True, resize_by_height=False):
     # validation
     if not image_path:
         print("Image not specified")
@@ -237,6 +250,8 @@ def single_image_processor(offset=4, image_path=None, save_file=False, crop_imag
     with Image.open(image_path) as img:
         # get image dimensions, grayscale, load pixel data
         img = resize_image(img)
+        if resize_by_height:
+            img = resize_image_by_height(img)
         width, height = img.size
         img = ImageOps.grayscale(img)
         img_pixel_data = img.load()
@@ -266,14 +281,23 @@ def single_image_processor(offset=4, image_path=None, save_file=False, crop_imag
                 sample_32x32.append(temp_array)
             if crop_image:
                 sample_32x32 = dynamically_crop_image(sample_32x32)
+            else:
+                sample_32x32 = np.array(sample_32x32)
             if remove_bad_samples:
                 if is_quality_sample(sample_32x32):
-                    save_letter(sample_32x32, f"cropped_{count}")
+                    save_letter(sample_32x32, f"reshaped_images/cropped_{count}")
                     count += 1
-            # cut sample into 16 8x8 pieces and add to 8x8 image data
-            pieces_8x8 = sampler(np.array(sample_32x32))
-            for piece in pieces_8x8:
-                image_data_8x8.append(piece)
+                    # cut sample into 16 8x8 pieces and add to 8x8 image data
+                    pieces_8x8 = sampler(np.array(sample_32x32))
+                    for piece in pieces_8x8:
+                        image_data_8x8.append(piece)
+            else:
+                save_letter(sample_32x32, f"reshaped_images/cropped_{count}")
+                count += 1
+                # cut sample into 16 8x8 pieces and add to 8x8 image data
+                pieces_8x8 = sampler(np.array(sample_32x32))
+                for piece in pieces_8x8:
+                    image_data_8x8.append(piece)
 
     # convert to numpy array
     image_data_8x8 = np.array(image_data_8x8)
