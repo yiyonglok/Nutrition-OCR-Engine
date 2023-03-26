@@ -19,7 +19,7 @@ def resize_image(img):
 def determine_max_valid_index(sample_size, offset, dimension_len):
     indices = [i for i in range(0, dimension_len, offset)]
     i = -1
-    while (indices[i] + sample_size) > dimension_len:
+    while (indices[i] + sample_size) > dimension_len - 1:
         i -= 1
     return indices[i]
 
