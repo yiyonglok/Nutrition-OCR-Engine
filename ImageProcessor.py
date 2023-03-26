@@ -2,6 +2,8 @@ import numpy
 import skimage.io
 from PIL import Image, ImageOps
 import os
+import platform
+import matplotlib.pyplot as plt
 
 MAX_RESOLUTION = (24, 24)
 REDUCTION_FACTOR = 8
@@ -15,9 +17,13 @@ def get_image_paths(path):
                 files.append(os.path.join(r, file))
     return files
 
-
 def image_name_parser(filename):
-    file_path = filename.split("\\")
+    if "mac" in platform.system().lower() or "linux" in platform.system().lower():
+        print("mac")
+        file_path = filename.split("/")
+    else:
+        print("windows")
+        file_path = filename.split("\\")
     return int(file_path[2][3:6])
 
 
@@ -27,13 +33,14 @@ def read_letter_images(filepath):
     data_array = []
     progress = 0
     for file in load_letters:
-        print(f"Progress: {progress * 100 / len(load_letters)}%")
+        print(f"Progress: {progress*100/len(load_letters)}%")
         if filepath != "non_letters":
             classifier = image_name_parser(file)
         else:
             classifier = 0
 
-        letter = skimage.io.imread(file, as_gray=True)
+        letter = skimage.util.img_as_ubyte(skimage.io.imread(file, as_gray=True))
+
         if len(data_array) == 0:
             data_array = numpy.array(sampler(letter, classifier))
         else:
@@ -44,10 +51,9 @@ def read_letter_images(filepath):
 
     return data_array
 
-
 def image_resize(image_path):
     image = Image.open(image_path)
-    new_image = image.resize((32, 32))
+    new_image = image.resize((32,32))
     new_image.save(image_path)
 
 
@@ -178,5 +184,6 @@ def save_letter(image_matrix, name):
 
 
 if __name__ == "__main__":
-    shrink_lowercase_samples("Char74k_32x32_cleaned_deanna")
-    add_lowercase_border("Char74k_32x32_cleaned_deanna")
+    None
+    #shrink_lowercase_samples("Char74k_32x32_cleaned_deanna")
+    #add_lowercase_border("Char74k_32x32_cleaned_deanna")
