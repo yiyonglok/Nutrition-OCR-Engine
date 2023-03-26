@@ -6,6 +6,7 @@ import HeatMapBuilder
 import KTester as kt
 import image_processor_8x8 as ip8
 import MultiOutputMLP as mlp
+import LabelToLetterTranslation as l2l
 
 
 
@@ -15,7 +16,7 @@ if __name__ == "__main__":
     bo_output_weights_path = f'{centroid_folder}/bo_output_weights.npy'
     mo_hidden_weights_path = f'{centroid_folder}/mo_hidden_weights.npy'
     mo_output_weights_path = f'{centroid_folder}/mo_output_weights.npy'
-    centroid_file_path = f'{centroid_folder}/centroid_data_150centroids_faizan.npy'
+    centroid_file_path = f'{centroid_folder}/centroid_data_150centroids_alex.npy'
 
     with open(bo_hidden_weights_path, 'rb') as opened_file:
         bo_hidden_weights = numpy.load(opened_file)
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     image_array = kt.LabelData(image_data,
                  centroid_file_path,
-                 f"{centroid_folder}/Calories_data_150centroids_faizan")
+                 f"{centroid_folder}/Calories_data_150centroids_alex")
 
     #image_array = f"{centroid_folder}/nutritionlabel_data_150centroids_faizan.npy"
 
@@ -63,6 +64,17 @@ if __name__ == "__main__":
     text_file = open("LetterRecognitionsBinaryFiltered.txt", "w")
     text_file.write(str(mo_predictions[hits]))
     text_file.close()
+
+    text_file = open("LetterRecognitionsTranslatedFiltered.txt", "w")
+    empty_array = numpy.zeros(len(bo_predictions))
+    empty_array[hits] = mo_predictions[hits]
+    letter_translation_array = numpy.vectorize(l2l.labels_as_letters.get)(empty_array[hits])
+    text_file.write(str(letter_translation_array))
+    text_file.close()
+
+    word = l2l.translate_letters_to_words(letter_translation_array)
+    print(word)
+    numpy.save("word_reditction", word)
 
     end = time.time()
 
