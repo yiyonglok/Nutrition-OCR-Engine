@@ -100,7 +100,7 @@ def read_nonletter_images(filepath):
 
         classifier = 0
 
-        nonletter = skimage.io.imread(file, as_gray=True)
+        nonletter = skimage.util.img_as_ubyte(skimage.io.imread(file, as_gray=True))
 
         if len(data_array) == 0:
             data_array = numpy.array(sampler(nonletter, classifier))
