@@ -62,10 +62,8 @@ def get_word_images(nutrition_label_image, heatmap_image):
         img_pixel_data_piece = image.load()
         for i_index in range(height):
             for j_index in range(width):
-                if img_pixel_data_piece[j_index, i_index] > 200:
+                if img_pixel_data_piece[j_index, i_index] > 0:
                     img_pixel_data_piece[j_index, i_index] = 255
-                else:
-                    img_pixel_data_piece[j_index, i_index] = 0
         if image.mode != 'RGB':
             image = image.convert('RGB')
         image.save(f"pieces_heatmap_contrast/piece_{count}.jpg")
@@ -75,7 +73,7 @@ def get_word_images(nutrition_label_image, heatmap_image):
         consecutive = 0
         x_indices = []
         for i in range(width):
-            if img_pixel_data_piece[i, mid] == 0:
+            if img_pixel_data_piece[i, mid] == 255:
                 if consecutive == 0:
                     x_index = i
                 consecutive += 1
