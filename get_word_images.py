@@ -1,5 +1,16 @@
 from PIL import Image, ImageOps
 import numpy as np
+import os
+
+
+def get_word_image_paths(path):
+    files = []
+    for r, d, f in os.walk(path):
+        for file in f:
+            if '.png' in file or '.jpg' in file:
+                files.append(os.path.join(r, file))
+    return files
+
 
 def get_word_images(nutrition_label_image, heatmap_image):
     with Image.open(nutrition_label_image) as img:
