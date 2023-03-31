@@ -17,6 +17,64 @@ def resize_image(img):
 
 
 def resize_image_by_height(img):
+
+    letter_height_endpoints = []
+    img_pixel_data = img.load()
+    width, height = img.size
+
+    # boost contrast
+    #for i_index in range(height):
+    #    for j_index in range(width):
+    #        if img_pixel_data[j_index, i_index] > 110:
+    #            img_pixel_data[j_index, i_index] = 255
+    #        else:
+    #            img_pixel_data[j_index, i_index] = 0
+
+    sample_32x32 = []
+    # build 32x32 sample
+    for y_index in range(0, height):
+        temp_array = []
+        for x_index in range(0, width):
+            temp_array.append(img_pixel_data[x_index, y_index])
+        sample_32x32.append(temp_array)
+
+    img_pixel_data = np.array(sample_32x32)
+
+    # find top and bottom of letter
+    is_space = False
+    for i in range(int(height / 2), -1, -1):
+        if not is_space and np.count_nonzero(img_pixel_data[i, :] == 0) < 10:
+            is_space = True
+            letter_height_endpoints.append(i)
+        if is_space:
+            break
+    if not is_space:
+        letter_height_endpoints.append(0)
+
+    is_space = False
+    for i in range(int(height / 2), height):
+        if not is_space and np.count_nonzero(img_pixel_data[i, :] == 0) < 10:
+            is_space = True
+            letter_height_endpoints.append(i)
+        if is_space:
+            break
+    if not is_space:
+        letter_height_endpoints.append(height)
+
+    letter_size = letter_height_endpoints[1] - letter_height_endpoints[0]
+    print("size:", letter_size)
+
+    if letter_size > 28:
+        aspect_ratio = width / height
+        height_reduction = int(height - (letter_size - 28))
+        if height_reduction < 33:
+            height_reduction = 33
+        width_reduction = int(aspect_ratio * height_reduction)
+        img = img.resize((width_reduction, height_reduction))
+        print(height_reduction)
+
+    return img
+    '''
     width, height = img.size
     max_width, max_height = MAX_RESOLUTION
     aspect_ratio = width / height
@@ -24,7 +82,7 @@ def resize_image_by_height(img):
     width_reduction = int(aspect_ratio * 40)
     if (height > 40):
         img = img.resize((width_reduction, height - height_reduction))
-    return img
+    '''
 
 
 def determine_max_valid_index(sample_size, offset, dimension_len):
@@ -121,6 +179,8 @@ def dynamically_crop_image(image):
 
     if len(letter_height_endpoints) == 2:
         shift = letter_height_endpoints[0] - (width - letter_height_endpoints[1])
+        #if abs(shift) > 15:
+        #    None
         if shift < -1:
             shift = abs(shift)
             new_column = np.zeros((int(shift/2), width)) + 255
@@ -134,6 +194,8 @@ def dynamically_crop_image(image):
 
     if len(letter_width_endpoints) == 2:
         shift = letter_width_endpoints[0] - (width - letter_width_endpoints[1])
+        #if abs(shift) > 15:
+        #    None
         if shift < -1:
             shift = abs(shift)
             new_column = np.zeros((width, int(shift / 2))) + 255
@@ -188,9 +250,9 @@ def multi_image_processor(offset=4, save_image=False):
         image_data_8x8 = []
         with Image.open(image_path) as img:
             # get image dimensions, grayscale, load pixel data
-            img = resize_image(img)
             width, height = img.size
             img = ImageOps.grayscale(img)
+            img = resize_image(img)
             img_pixel_data = img.load()
             # boost contrast
             for i_index in range(height):
@@ -232,7 +294,7 @@ def multi_image_processor(offset=4, save_image=False):
         np.save(f"{file_names[image_count]}_8x8_data", image_data_8x8)
 
 
-def single_image_processor(offset=4, image_path=None, save_file=False, crop_image=True, remove_bad_samples=True, resize_by_height=False):
+def single_image_processor(offset=4, image_path=None, save_file=False, crop_image=False, remove_bad_samples=False, resize_by_height=False):
     # validation
     if not image_path:
         print("Image not specified")
@@ -250,10 +312,11 @@ def single_image_processor(offset=4, image_path=None, save_file=False, crop_imag
     with Image.open(image_path) as img:
         # get image dimensions, grayscale, load pixel data
         img = resize_image(img)
-        if resize_by_height:
-            img = resize_image_by_height(img)
         width, height = img.size
         img = ImageOps.grayscale(img)
+        if resize_by_height:
+            img = resize_image_by_height(img)
+            width, height = img.size
         img_pixel_data = img.load()
         # boost contrast
         for i_index in range(height):
@@ -281,6 +344,7 @@ def single_image_processor(offset=4, image_path=None, save_file=False, crop_imag
                 sample_32x32.append(temp_array)
             if crop_image:
                 sample_32x32 = dynamically_crop_image(sample_32x32)
+                #sample_32x32 = dynamically_crop_image(sample_32x32)
             else:
                 sample_32x32 = np.array(sample_32x32)
             if remove_bad_samples:

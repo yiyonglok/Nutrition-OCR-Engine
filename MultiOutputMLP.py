@@ -145,10 +145,9 @@ def load_testing_data(testing_data, centroid_file_path):
     X = testing_data
 
     #reshape the 32x32's properly to recreate the letter representations
-    X = data_reshaper.reshape_letter_data(X, save_images=True, crop_images=False)
+    X = data_reshaper.reshape_letter_data(X, save_images=False, crop_images=False)
 
     reshaped_image = numpy.reshape(X[0], (32, 32))
-    print_hit_images(reshaped_image, f"reshaped_images/testing.jpg")
 
     #X = feature_pooling(X)
     Bias = numpy.full((len(X), 1), 1)

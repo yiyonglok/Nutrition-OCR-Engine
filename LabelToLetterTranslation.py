@@ -29,8 +29,10 @@ def translate_letters_to_words(letters):
                 letter_counter += 1
             else:
                 letter_counter = 1
-        if letter_counter > 0 and letter_counter % 2 == 0:
+        if letter_counter == 2 or letter_counter == 5:
             word += letter_data[i]
+        if letter_counter == 5:
+            letter_counter = 0
 
     return word
 
