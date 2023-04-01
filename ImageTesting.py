@@ -60,9 +60,10 @@ if __name__ == "__main__":
     translated_text_file = open("LetterRecognitionsTranslatedFiltered.txt", "w")
     predicted_word_text_file = open("PredictedWords.txt", "w")
 
+    wordlist = []
     for file in load_word_images:
 
-        offset, image_data, image_width, image_height, img_pixel_data = ip8.single_image_processor(
+        offset, image_data, image_width, image_height, img_pixel_data, max_height_index, max_width_index = ip8.single_image_processor(
             image_path=f"{file}", save_file=False, crop_image=True,
             resize_by_height=True, remove_bad_samples=True)
 
@@ -78,12 +79,17 @@ if __name__ == "__main__":
             mo_predictions = mlp.run_model(X, mo_hidden_weights, mo_output_weights)
             hits = numpy.nonzero(bo_predictions)
 
+            cleaned_mo_predictions = l2l.remove_stacked_samples(mo_predictions, max_height_index, max_width_index)
+
+            # after cleanup
+            empty_array = numpy.zeros(len(bo_predictions))
+            empty_array[hits] = cleaned_mo_predictions[hits]
+
             letter_recognitions_text_file.write(f"{file}: {str(mo_predictions)}")
             letter_recognitions_text_file.write("\n")
             binary_filtered_text_file.write(f"{file}: {str(bo_predictions)}")
             binary_filtered_text_file.write("\n")
-            empty_array = numpy.zeros(len(bo_predictions))
-            empty_array[hits] = mo_predictions[hits]
+
             if len(empty_array[hits]) > 0:
                 letter_translation_array = numpy.vectorize(l2l.labels_as_letters.get)(empty_array[hits])
                 translated_text_file.write(f"{file}: {str(letter_translation_array)}")
@@ -93,6 +99,7 @@ if __name__ == "__main__":
                 predicted_word_text_file.write(f"{file}: {word}")
                 predicted_word_text_file.write("\n")
                 print(word)
+                wordlist.append(word)
 
             counter += 1
 
@@ -100,6 +107,8 @@ if __name__ == "__main__":
     binary_filtered_text_file.close()
     translated_text_file.close()
     predicted_word_text_file.close()
+
+    numpy.save("PredictedWords", wordlist)
 
     end = time.time()
 
