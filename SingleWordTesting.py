@@ -30,8 +30,9 @@ if __name__ == "__main__":
 
     start = time.time()  # Start Timer
 
-    offset, image_data, image_width, image_height, img_pixel_data = ip8.single_image_processor(image_path="words/word_2_1.jpg",
+    offset, image_data, image_width, image_height, img_pixel_data, max_height_index, max_width_index = ip8.single_image_processor(image_path="words/word_2_0.jpg",
                                                                                save_file=True, crop_image=True, resize_by_height=True, remove_bad_samples=True)
+
 
     image_array = kt.LabelData(image_data,
                  centroid_file_path,
@@ -61,6 +62,13 @@ if __name__ == "__main__":
     letter_translation_array = numpy.vectorize(l2l.labels_as_letters.get)(empty_array[hits])
     text_file.write(str(letter_translation_array))
     text_file.close()
+
+    cleaned_mo_predictions = l2l.remove_stacked_samples(mo_predictions, max_height_index, max_width_index)
+
+    # after cleanup
+    empty_array = numpy.zeros(len(bo_predictions))
+    empty_array[hits] = cleaned_mo_predictions[hits]
+    letter_translation_array = numpy.vectorize(l2l.labels_as_letters.get)(empty_array[hits])
 
     word = l2l.translate_letters_to_words(letter_translation_array)
     print(word)
