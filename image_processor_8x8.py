@@ -64,9 +64,9 @@ def resize_image_by_height(img):
     letter_size = letter_height_endpoints[1] - letter_height_endpoints[0]
     print("size:", letter_size)
 
-    if letter_size > 28:
+    if letter_size > 25:
         aspect_ratio = width / height
-        height_reduction = int(height - (letter_size - 28))
+        height_reduction = int(height - (letter_size - 25))
         if height_reduction < 33:
             height_reduction = 33
         width_reduction = int(aspect_ratio * height_reduction)
@@ -74,15 +74,6 @@ def resize_image_by_height(img):
         print(height_reduction)
 
     return img
-    '''
-    width, height = img.size
-    max_width, max_height = MAX_RESOLUTION
-    aspect_ratio = width / height
-    height_reduction = int(height - 40)
-    width_reduction = int(aspect_ratio * 40)
-    if (height > 40):
-        img = img.resize((width_reduction, height - height_reduction))
-    '''
 
 
 def determine_max_valid_index(sample_size, offset, dimension_len):
@@ -114,9 +105,13 @@ def sampler(image):
 def is_quality_sample(image):
     if np.min(image) > 200:
         return False
-    if (np.min(image[:, 0]) < 5) != (np.min(image[:, -1]) < 5):
+    min_first_col = np.min(image[:, 0])
+    min_last_col = np.min(image[:, -1])
+    min_first_row = np.min(image[0, :])
+    min_last_row = np.min(image[-1, :])
+    if (min_first_col < 5) != (min_last_col < 5): #and (np.count_nonzero(image[:, 0] == min_first_col) > 5 or np.count_nonzero(image[:, 0] == min_last_col) > 5):
         return False
-    if (np.min(image[0, :]) < 5) != (np.min(image[-1, :]) < 5):
+    if (min_first_row < 5) != (min_last_row < 5): #and (np.count_nonzero(image[:, 0] == min_first_row) > 5 or np.count_nonzero(image[:, 0] == min_last_row) > 5):
         return False
     return True
 
@@ -348,20 +343,14 @@ def single_image_processor(offset=4, image_path=None, save_file=False, crop_imag
             else:
                 sample_32x32 = np.array(sample_32x32)
             if remove_bad_samples:
-                if is_quality_sample(sample_32x32):
-                    save_letter(sample_32x32, f"reshaped_images/cropped_{count}")
-                    count += 1
-                    # cut sample into 16 8x8 pieces and add to 8x8 image data
-                    pieces_8x8 = sampler(np.array(sample_32x32))
-                    for piece in pieces_8x8:
-                        image_data_8x8.append(piece)
-            else:
-                save_letter(sample_32x32, f"reshaped_images/cropped_{count}")
-                count += 1
-                # cut sample into 16 8x8 pieces and add to 8x8 image data
-                pieces_8x8 = sampler(np.array(sample_32x32))
-                for piece in pieces_8x8:
-                    image_data_8x8.append(piece)
+                if not is_quality_sample(sample_32x32):
+                    sample_32x32[:, :] = 255
+            save_letter(sample_32x32, f"reshaped_images/{count}")
+            count += 1
+            # cut sample into 16 8x8 pieces and add to 8x8 image data
+            pieces_8x8 = sampler(np.array(sample_32x32))
+            for piece in pieces_8x8:
+                image_data_8x8.append(piece)
 
     # convert to numpy array
     image_data_8x8 = np.array(image_data_8x8)
@@ -371,7 +360,7 @@ def single_image_processor(offset=4, image_path=None, save_file=False, crop_imag
         np.save(f"{file_name}_8x8_data_single", image_data_8x8)
 
     print("image data 8x8 shape: ", np.shape(image_data_8x8))
-    return offset, image_data_8x8, width, height, img_pixel_data
+    return offset, image_data_8x8, width, height, img_pixel_data, max_height_index, max_width_index
 
 
 if __name__ == "__main__":
