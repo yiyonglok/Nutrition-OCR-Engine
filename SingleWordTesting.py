@@ -63,7 +63,8 @@ if __name__ == "__main__":
     text_file.write(str(letter_translation_array))
     text_file.close()
 
-    cleaned_mo_predictions = l2l.remove_stacked_samples(mo_predictions, max_height_index, max_width_index)
+    cleaned_mo_predictions, bo_predictions = l2l.remove_stacked_samples(mo_predictions, bo_predictions, max_height_index, max_width_index)
+    hits = numpy.nonzero(bo_predictions)
 
     # after cleanup
     empty_array = numpy.zeros(len(bo_predictions))
